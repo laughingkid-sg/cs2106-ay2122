@@ -26,6 +26,8 @@
 #define RESET_LIST 5
 #define MAP 6
 
+void run_instruction(list *lst, int instr, FILE* file);
+
 int main(int argc, char **argv) {
     if (argc != 2) {
         fprintf(stderr, "Error: expecting 1 argument, %d found\n", argc - 1);
@@ -34,6 +36,10 @@ int main(int argc, char **argv) {
 
     // We read in the file name provided as argument
     char *fname = argv[1];
+    FILE* file = fopen(fname, "r");
+    if (file == NULL) {
+        fprintf(stderr, "Error: file %s not found\n", fname);
+    }
 
     // Update the array of function pointers
     // DO NOT REMOVE THIS CALL
@@ -41,4 +47,47 @@ int main(int argc, char **argv) {
     update_functions();
 
     // Rest of code logic here
+    list *lst = (list*) malloc(sizeof(list));
+    lst -> head = NULL;
+
+    int instr;
+    while (fscanf(file, "%d", &instr) == 1) {
+        run_instruction(lst, instr, file);
+    }
+
+    reset_list(lst);
+    free(lst);
+    fclose(file);
 }
+
+void run_instruction(list *lst, int instr, FILE* file)
+{
+    int index, data, offset;
+    switch (instr) {
+        case SUM_LIST:
+            printf("%ld\n", sum_list(lst));
+            break;
+        case INSERT_AT:
+            fscanf(file, "%d %d", &index, &data);
+            insert_node_at(lst, index, data);
+            break;
+        case DELETE_AT:
+            fscanf(file, "%d", &index);
+            delete_node_at(lst, index);
+            break;
+        case ROTATE_LIST:
+            fscanf(file, "%d", &offset);
+            rotate_list(lst, offset);
+            break;
+        case REVERSE_LIST:
+            reverse_list(lst);
+            break;
+        case RESET_LIST:
+            reset_list(lst);
+            break;
+        case MAP:
+            fscanf(file, "%d", &index);
+            map(lst, func_list[index]);
+    }
+}
+

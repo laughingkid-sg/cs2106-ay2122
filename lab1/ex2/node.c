@@ -1,8 +1,8 @@
 /*************************************
 * Lab 1 Exercise 2
-* Name:
-* Student No:
-* Lab Group:
+* Name: Goh Zheng Teck
+* Student No: 
+* Lab Group: 08
 *************************************/
 
 #include "node.h"
@@ -67,6 +67,7 @@ void insert_node_at(list *lst, int index, int data) {
         current -> next = nn;
 
     }
+    
 }
 
 // Deletes node at index (counting from head starting from 0).
@@ -77,6 +78,7 @@ void delete_node_at(list *lst, int index) {
     node *current = lst -> head;
 
     if (current == current -> next) {
+        free(lst -> head);
         lst -> head = NULL;
     } else {
         
@@ -172,13 +174,22 @@ void reverse_list(list *lst) {
 // Resets list to an empty state (no nodes) and frees
 // any allocated memory in the process
 void reset_list(list *lst) {
-    node* temp;
-    node* first = lst -> head;
 
-    while (first != NULL && first != lst -> head) {
-       temp = first;
-       first = first -> next;
-       free(temp);
+    node* fn = lst -> head;
+    if (fn -> next != fn) {
+        node* current = fn -> next;
+
+        // Free nodes by freeing node and the next
+        while (current != fn) {
+            node* next = current->next;
+            free(current);
+            current = next;
+        }
+        
     }
+    // Free up memory
+    free(fn);
+    // Set list head's pointer to null
     lst -> head = NULL;
+
 }
