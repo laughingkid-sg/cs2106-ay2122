@@ -74,6 +74,10 @@ void insert_node_at(list *lst, int index, int data) {
 // Note: index is guarenteed to be valid.
 void delete_node_at(list *lst, int index) {
 
+    if (lst -> head == NULL) {
+        return;
+    }
+
     // Set current to first node in list
     node *current = lst -> head;
 
@@ -122,6 +126,9 @@ void delete_node_at(list *lst, int index) {
 // Rotates list by the given offset.
 // Note: offset is guarenteed to be non-negative.
 void rotate_list(list *lst, int offset) {
+    if (lst -> head == NULL) {
+        return;
+    }
 
     // Set current to first node in list
     node *current = lst -> head;
@@ -138,7 +145,9 @@ void rotate_list(list *lst, int offset) {
 // Reverses the list, with the original "tail" node
 // becoming the new head node.
 void reverse_list(list *lst) {
-
+    if (lst -> head == NULL) {
+        return;
+    }
     // Set the  prev, current and next nodes
     node *prev = NULL;
     node *current = lst -> head;
@@ -174,7 +183,9 @@ void reverse_list(list *lst) {
 // Resets list to an empty state (no nodes) and frees
 // any allocated memory in the process
 void reset_list(list *lst) {
-
+    if (lst -> head == NULL) {
+        return;
+    }
     node* fn = lst -> head;
     if (fn -> next != fn) {
         node* current = fn -> next;

@@ -73,12 +73,14 @@ void insert_node_at(list *lst, int index, int data) {
 // Deletes node at index (counting from head starting from 0).
 // Note: index is guarenteed to be valid.
 void delete_node_at(list *lst, int index) {
-
+    if (lst -> head == NULL) {
+        return;
+    }
     // Set current to first node in list
     node *current = lst -> head;
 
     if (current == current -> next) {
-        free(lst -> head);
+        free(current);
         lst -> head = NULL;
     } else {
         
@@ -122,6 +124,9 @@ void delete_node_at(list *lst, int index) {
 // Rotates list by the given offset.
 // Note: offset is guarenteed to be non-negative.
 void rotate_list(list *lst, int offset) {
+    if (lst -> head == NULL) {
+        return;
+    }
 
     // Set current to first node in list
     node *current = lst -> head;
@@ -138,7 +143,9 @@ void rotate_list(list *lst, int offset) {
 // Reverses the list, with the original "tail" node
 // becoming the new head node.
 void reverse_list(list *lst) {
-
+    if (lst -> head == NULL) {
+        return;
+    }
      // Set the  prev, current and next nodes
     node *prev = NULL;
     node *current = lst -> head;
@@ -174,8 +181,11 @@ void reverse_list(list *lst) {
 // any allocated memory in the process
 void reset_list(list *lst) {
 
-    node* fn = lst -> head;
-    if (fn -> next != fn) {
+    if (lst -> head == NULL) {
+        return;
+    } else  {
+        node* fn = lst -> head;
+         if (fn -> next != fn) {
         node* current = fn -> next;
 
         // Free nodes by freeing node and the next
@@ -190,12 +200,18 @@ void reset_list(list *lst) {
     free(fn);
     // Set list head's pointer to null
     lst -> head = NULL;
+    }
+   
 
 }
 
 // Traverses list and applies func on data values of
 // all elements in the list.
 void map(list *lst, int (*func)(int)) {
+    if (lst -> head == NULL) {
+        return;
+    }
+
     node *fn = lst -> head;
 
     if (fn != NULL) {
@@ -214,6 +230,9 @@ void map(list *lst, int (*func)(int)) {
 // Traverses list and returns the sum of the data values
 // of every node in the list.
 long sum_list(list *lst) {
+    if (lst -> head == NULL) {
+        return 0;
+    }
 
     node *fn = lst -> head;
     long sum = 0;
@@ -229,3 +248,5 @@ long sum_list(list *lst) {
     } 
     return sum;
 }
+
+
