@@ -2,19 +2,19 @@
 
 ####################
 # Lab 1 Exercise 5
-# Name:
+# Name: Goh Zheng Teck
 # Student No:
-# Lab Group: 
+# Lab Group: 08
 ####################
 
 # Fill the below up
-hostname=
-machine_hardware=
-max_user_process_count=
-user_process_count=
-user_with_most_processes=
-mem_free_percentage=
-swap_free_percentage=
+hostname=$(uname -n)
+machine_hardware=$(uname -s -m)
+max_user_process_count=$(ulimit -u)
+user_process_count=$(ps aux  | awk '{print $1}' | grep $USER | wc -l)
+user_with_most_processes=$(ps -eo user|sort|uniq -c|sort -nr |  head -n 1 | awk {'print $2'})
+mem_free_percentage=$(free | grep Mem | awk '{print ($4/$2) * 100.0}')
+swap_free_percentage=$(free | grep Swap | awk '{print ($4/$2) * 100.0}')
 
 echo "Hostname: $hostname"
 echo "Machine Hardware: $machine_hardware"
