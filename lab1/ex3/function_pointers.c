@@ -1,8 +1,8 @@
 /*************************************
 * Lab 1 Exercise 3
-* Name:
+* Name: Goh Zheng Teck
 * Student No:
-* Lab Group:
+* Lab Group: 08
 *************************************/
 
 #include "functions.h"
