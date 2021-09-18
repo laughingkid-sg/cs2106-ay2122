@@ -26,6 +26,7 @@ typedef struct {
 	enum statues state;
 } process_t;
 
+int cmdRunner(size_t num_tokens, char **tokens);
 int cmdCounter(size_t num_tokens, char **tokens);
 void updateStatues();
 void printInfo();
@@ -41,11 +42,11 @@ void my_init(void) {
 
 void my_process_command(size_t num_tokens, char **tokens) {
     // Your code here, refer to the lab document for a description of the arguments
-    if (!strcmp(tokens[0], "info")) {
+    if (!strcmp(tokens[0], "info")) /* Handle info command*/ {
         updateStatues();
         printInfo();
         return;
-    } else if (!strcmp(tokens[0], "wait")) {
+    } else if (!strcmp(tokens[0], "wait")) /* Handle wait command*/ {
         int exitStatus;
         process_t *process = getProcess((int) atoi(tokens[1]));
         if (process != NULL && process->state == Running) {
@@ -54,7 +55,7 @@ void my_process_command(size_t num_tokens, char **tokens) {
             process->exitStatus = WEXITSTATUS(exitStatus);
         }
         return;
-    } else if (!strcmp(tokens[0], "terminate")) {
+    } else if (!strcmp(tokens[0], "terminate")) /* Handle terminate command*/ {
         process_t *process = getProcess((int) atoi(tokens[1]));
         if (process != NULL && process->state == Running) {
             // int exitStatus, pID;
@@ -62,57 +63,41 @@ void my_process_command(size_t num_tokens, char **tokens) {
             process->state = Terminating;
         }
         return;
-    } else {
-        
-        int cmdCount = cmdCounter(num_tokens, tokens);
+    } else /* Handle standard command(s)*/ {
+        int i = 0;
+        while (i < ((int)num_tokens) - 2) { // -1 for array, 1 for null
+            int counter = i;
 
-        for (int i = 0; i < cmdCount; i++) {
-
-        }
-        int result, exitStatus, isBG = !strcmp(tokens[num_tokens - 2], "&");
-        int pID = fork();
-
-        process_t *newProcess = (process_t*)malloc(sizeof(process_t));
-        switch (pID) {
-
-        case -1:
-            printf("Error in creating process\n");
-            break;
-        
-        case 0:
-            if (isBG)
-                tokens[num_tokens - 2] = NULL;
-            if (execv(tokens[0], tokens) == -1)
-                exit(EXIT_FAILURE);
-            break;
-        default:
-            newProcess->pID = pID;
-
-            if (isBG) {
-                result = waitpid(pID, &exitStatus, WNOHANG);
-                if (result == -1) {
-                    printf("%s not found\n", tokens[0]);
-                    return;
-                }
-                else {
-                    newProcess->state = Running;
-                    printf("Child[%d] in background\n", pID);
-                }
-
-            } else {
-                waitpid(pID, &exitStatus, 0);
-                if (WEXITSTATUS(exitStatus) == EXIT_FAILURE) {
-                    printf("%s not found\n", tokens[0]);
-                    return;
-                } else {
-                    newProcess->state = Exited;
-                    newProcess->exitStatus = WEXITSTATUS(exitStatus);
-                }
+            // Sub-dividing
+            while (counter <= ((int) num_tokens - 2) && strcmp(tokens[counter], "&&")) 
+                counter++;
+            
+            // Prepearing sub-tokens
+            char **subTokens = malloc(sizeof(char *) * MAX_PROCESSES);
+            for (int k = i; k < counter; k++) {
+                subTokens[k-i] = malloc(sizeof(char) * MAX_PROCESSES);
+                strcpy(subTokens[k-i], tokens[k]);
+                //printf("Token %d: %s\n",k-i,subTokens[k-i]);
             }
-            info[length] = newProcess;
-            length++;
-            break;
+            subTokens[counter] = NULL;
+
+            //printf("Token Count: %d\n",counter - i);
+
+            // Running 
+            if (!cmdRunner(counter - i + 1, subTokens)) {
+                break;
+            }
+
+            // Cleaning
+            for (int k = i; k < counter; k++) {
+                free(subTokens[k-i]);
+            }
+            free(subTokens);
+
+            // Increamental 
+            i = counter + 1;
         }
+        return;
     }
 }
 
@@ -137,6 +122,62 @@ void my_quit(void) {
         free(info[length]);
     }
     printf("Goodbye!\n");
+}
+
+int cmdRunner(size_t num_tokens, char **tokens) {
+        int result, exitStatus, isBG = !strcmp(tokens[num_tokens - 2], "&"),
+        prgmNotExist = access(tokens[0], F_OK | X_OK);
+        if (prgmNotExist) {
+            printf("%s not found\n", tokens[0]);
+            return 0;
+        }
+        int pID = fork();
+        process_t *newProcess = (process_t*)malloc(sizeof(process_t));
+        switch (pID) {
+        case -1: // Fork Failed 
+            printf("Error in creating process\n");
+            break;
+        case 0: // Child Proces
+            if (isBG) // Manage Aysnc 
+                tokens[num_tokens - 2] = NULL;
+            if (execv(tokens[0], tokens) == -1)
+                exit(EXIT_FAILURE);
+            break;
+        default: // Parent Process
+            newProcess->pID = pID;
+            if (isBG) {
+                result = waitpid(pID, &exitStatus, WNOHANG);
+                if (result == -1) {
+                    printf("%s failed\n", tokens[0]);
+                    newProcess->state = Exited;
+                    newProcess->exitStatus = WEXITSTATUS(exitStatus);
+                    info[length] = newProcess;
+                    length++;
+                    return 0;
+                } else {
+                    newProcess->state = Running;
+                    printf("Child[%d] in background\n", pID);
+                }
+
+            } else {
+                waitpid(pID, &exitStatus, 0);
+                if (WEXITSTATUS(exitStatus) == EXIT_FAILURE) {
+                    printf("%s failed\n", tokens[0]);
+                    newProcess->state = Exited;
+                    newProcess->exitStatus = WEXITSTATUS(exitStatus);
+                    info[length] = newProcess;
+                    length++;
+                    return 0;
+                } else {
+                    newProcess->state = Exited;
+                    newProcess->exitStatus = WEXITSTATUS(exitStatus);
+                }
+            }
+            info[length] = newProcess;
+            length++;
+            break;
+        }
+        return 1;
 }
 
 int cmdCounter(size_t num_tokens, char **tokens) {
