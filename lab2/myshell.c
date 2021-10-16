@@ -72,7 +72,7 @@ void my_process_command(size_t num_tokens, char **tokens) {
          * isChain -> boolean for chain check used to handle 'Result 7' case
         */
         int i = 0, isChain = 0;
-        while (i < ((int)num_tokens) - 2) { // -1 for 0 index, 1 for null for last
+        while (i <= ((int)num_tokens) - 2) { // -1 for 0 index, 1 for null for last
 
             // counter -> Start of sub-token
             int counter = i;
@@ -88,6 +88,12 @@ void my_process_command(size_t num_tokens, char **tokens) {
                 strcpy(subTokens[k-i], tokens[k]);
             }
             subTokens[counter] = NULL;
+
+            // Ending chain for last cmd
+            /* Unsure behavoiour TBC
+            if (counter == ((int) num_tokens - 2))
+                isChain = 0;
+            */
 
             // Running 
             if (!cmdRunner(counter - i + 1, subTokens, isChain)) {
@@ -148,8 +154,8 @@ int cmdRunner(size_t num_tokens, char **tokens, int isChain) {
      * pos -> position of redirect
     */
     int result, exitStatus, isBG = !strcmp(tokens[num_tokens - 2], "&"),
-    prgmNotExist = access(tokens[0], F_OK | X_OK), fd, pos;
-    int redirects[2]; // Max 2 cmds
+    prgmNotExist = access(tokens[0], F_OK | X_OK), fd, pos, isFailed = 0;
+    int redirects[3]; // Max 3 cmds
     if (prgmNotExist) {
         printf("%s not found\n", tokens[0]);
         return 0;
@@ -168,6 +174,7 @@ int cmdRunner(size_t num_tokens, char **tokens, int isChain) {
         for (int i = 0; i < hasRedirect; i++) {
             pos = redirects[i];
             if (!strcmp(tokens[pos], "<")) {
+                // Not a fd, just using access to check if exist for convenience 
                 fd = access(tokens[pos+1], F_OK | R_OK);
                 if (fd) {
                     printf("%s does not exist\n", tokens[pos + 1]);
@@ -210,15 +217,14 @@ int cmdRunner(size_t num_tokens, char **tokens, int isChain) {
                         exit(1);
                     }
                     if (!strcmp(tokens[pos], ">")) {
-                        tokens[pos] = NULL;
                         dup2(fd, fileno(stdout));
                     } else if (!strcmp(tokens[pos], "2>")) {
                         dup2(fd, fileno(stderr));
                     }
                 }
-                if (i == 0) {
-                    tokens[pos] = NULL;
-                }
+                
+                tokens[pos] = NULL;
+                close(fd);
         }
     }
         if (isBG) // Manage Aysnc 
@@ -228,32 +234,30 @@ int cmdRunner(size_t num_tokens, char **tokens, int isChain) {
         break;
     default: // Parent Process
         newProcess->pID = pID;
-        if (isBG) {
+        if (isBG) /* Handle background processes (Async) */{
             result = waitpid(pID, &exitStatus, WNOHANG);
-            if (result == -1) {
-                printf("%s failed\n", tokens[0]);
+            if (result == -1) /* Failed */ {
                 newProcess->state = Exited;
                 newProcess->exitStatus = WEXITSTATUS(exitStatus);
-                info[len] = newProcess;
-                len++;
-                return 0;
-            } else {
+                isFailed = 1;
+            } else /* Sucessful*/ {
                 newProcess->state = Running;
                 printf("Child[%d] in background\n", pID);
             }
-        } else {
+        } else /* Handle normal processes */ {
             waitpid(pID, &exitStatus, 0);
             newProcess->state = Exited;
             newProcess->exitStatus = WEXITSTATUS(exitStatus);
-            if (WEXITSTATUS(exitStatus) == EXIT_FAILURE || (WEXITSTATUS(exitStatus) != 0 && isChain)) {
-                printf("%s failed\n", tokens[0]);
-                info[len] = newProcess;
-                len++;
-                return 0;
+            if (WEXITSTATUS(exitStatus) == EXIT_FAILURE || (WEXITSTATUS(exitStatus) != 0 && isChain)) /* For chain commands if exit code is not 0, stop processing */ {
+                isFailed = 1;
             }
         }
         info[len] = newProcess;
         len++;
+        if (isFailed) /* Any failure will be returned to break loop */ {
+            printf("%s failed\n", tokens[0]);
+            return 0;
+        }
         break;
     }
     return 1;
