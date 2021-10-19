@@ -1,6 +1,7 @@
 #include "packer.h"
 #include <semaphore.h>
 #include "stdlib.h"
+#include <stdio.h>
 
 void populateArr(int id, int *other_ids, int box[]);
 
